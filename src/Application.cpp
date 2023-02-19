@@ -1,12 +1,16 @@
 #include "Application.h"
 
-#include <GL/glew.h>
-#include <GL/gl.h>
 #include <iostream>
 #include <string>
 #include <vector>
 
-constexpr int NUM_VERTICES_PER_POLYGON = 3;
+#include <GL/glew.h>
+#include <GL/gl.h>
+
+void Application::set_render_mode(const GLenum &mode)
+{
+	glPolygonMode(GL_FRONT_AND_BACK, mode);
+}
 
 void Application::resize_window(int width, int height)
 {
@@ -23,6 +27,7 @@ void Application::setup()
 		"{\n"
 		"	gl_Position = vec4(position, 1.0);\n"
 		"}\0";
+
 	const char* fragment_shader_source =
 		"#version 330 core\n"
 		"out vec4 out_color;\n"
@@ -54,31 +59,65 @@ void Application::setup()
 	glDeleteShader(fragment_shader);
 	glDeleteShader(vertex_shader);
 
-	// Define the vertex data for the triangle
-	vertices = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f};
+	// Define the vertex data for the triangles
+	vertices = {
+		 0.5f,  0.5f, 0.0f, // top right
+		 0.5f, -0.5f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, // bottom left
+		-0.5f,  0.5f, 0.0f  // top left
+	};
 
 	// Create the vertex buffer object (VBO)
 	glGenBuffers(1, &vbo);
 
 	// Bind the VBO and set the vertex data as the buffer's data
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+	glBufferData(
+		GL_ARRAY_BUFFER, 
+		sizeof(vertices), 
+		vertices.data(), 
+		GL_STATIC_DRAW
+	);
+
+	// Define the face indices for the triangles
+	indices = {
+		0, 1, 3, // first triangle
+		1, 2, 3  // second triangle
+	};
+
+	// Create the element array object (EBO)
+	glGenBuffers(1, &ebo);
+
+	// Bind the EBO and set the face index data as the buffer's data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(
+		GL_ELEMENT_ARRAY_BUFFER, 
+		sizeof(indices), 
+		indices.data(), 
+		GL_STATIC_DRAW
+	);
 
 	// Create the vertex array object (VAO)
 	glGenVertexArrays(1, &vao);
 
 	// Bind the VAO and set the vertex attribute pointer for position
 	glBindVertexArray(vao);
-	int pos_attrib = glGetAttribLocation(shader_program, "position");
+	const int pos_attrib = glGetAttribLocation(shader_program, "position");
 	glEnableVertexAttribArray(pos_attrib);
 	glVertexAttribPointer(
 		pos_attrib, 
-		NUM_VERTICES_PER_POLYGON, 
+		NUM_VERTICES_PER_TRIANGLE, 
 		GL_FLOAT,
 		GL_FALSE, 
-		NUM_VERTICES_PER_POLYGON * sizeof(float), 
+		NUM_VERTICES_PER_TRIANGLE * sizeof(float), 
 		nullptr
 	);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	// Uncomment the below line to enable wireframe
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 void Application::check_shader_compilation_success(uint32_t shader)
@@ -91,7 +130,7 @@ void Application::check_shader_compilation_success(uint32_t shader)
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
 		std::vector<GLchar> log((size_t)log_length);
 		glGetShaderInfoLog(shader, log_length, &log_length, log.data());
-		std::string log_str(log.begin(), log.end());
+		const std::string log_str(log.begin(), log.end());
 		std::cerr << "Shader compilation failed: " << log_str << "\n";
 	}
 }
@@ -106,7 +145,7 @@ void Application::check_program_link_success(uint32_t program)
 		glGetShaderiv(program, GL_INFO_LOG_LENGTH, &log_length);
 		std::vector<GLchar> log((size_t)log_length);
 		glGetShaderInfoLog(program, log_length, &log_length, log.data());
-		std::string log_str(log.begin(), log.end());
+		const std::string log_str(log.begin(), log.end());
 		std::cerr << "Shader program linking failed: " << log_str << "\n";
 	}
 }
@@ -122,15 +161,8 @@ void Application::input()
 		{
 			// Closing the window
 			case SDL_QUIT:
-				running = false;
-				break;
-			case SDL_KEYDOWN:
 			{
-				if (event.key.keysym.sym == SDLK_ESCAPE)
-				{
-					running = false;
-					break;
-				}
+				running = false;
 				break;
 			}
 			// Resizing the window
@@ -139,6 +171,27 @@ void Application::input()
 				if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
 				{
 					resize_window(event.window.data1, event.window.data2);
+					break;
+				}
+				break;
+			}
+			case SDL_KEYDOWN:
+			{
+				// Close the window
+				if (event.key.keysym.sym == SDLK_ESCAPE)
+				{
+					running = false;
+					break;
+				}
+				// Switch render modes
+				if (event.key.keysym.sym == SDLK_1)
+				{
+					set_render_mode(GL_LINE);
+					break;
+				}
+				if (event.key.keysym.sym == SDLK_2)
+				{
+					set_render_mode(GL_FILL);
 					break;
 				}
 				break;
@@ -156,12 +209,15 @@ void Application::render()
 	// Clear the color buffer to black
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-
-	// Draw the triangle
+	// Specify the shader program to use
 	glUseProgram(shader_program);
+	// Get the vertex array to render
 	glBindVertexArray(vao);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	// Draw the triangles from the vertices
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+	// Clear the vertex array
+	glBindVertexArray(0);
 	// Update the framebuffer
 	SDL_GL_SwapWindow(window);
 }
@@ -190,7 +246,7 @@ void Application::initialize()
 
 	// Initialize GLEW to access the OpenGL functions
 	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
+	const GLenum err = glewInit();
 	if (err != GLEW_OK)
 	{
 		std::cerr << "Failed to initialize GLEW.\n";
@@ -211,21 +267,25 @@ void Application::run()
 	// We want the FPS to be fixed to the speed of the user's monitor refresh
 	target_seconds_per_frame = 1.0f / (float)display_mode.refresh_rate;
 
+	uint64_t start, end;
+	float time_elapsed;
+	uint32_t ms_to_wait;
+
 	while (running)
 	{
-		uint64_t start = SDL_GetPerformanceCounter();
+		start = SDL_GetPerformanceCounter();
 		input();
 		update();
 		render();
-		uint64_t end = SDL_GetPerformanceCounter();
+		end = SDL_GetPerformanceCounter();
 
-		float time_elapsed = (float)(end - start) / (float)SDL_GetPerformanceFrequency();
+		time_elapsed = (float)(end - start) / (float)SDL_GetPerformanceFrequency();
 
 		// If we still have time after updating the frame, wait to advance to
 		// the next one
 		if (time_elapsed < target_seconds_per_frame)
 		{
-			uint32_t ms_to_wait = (uint32_t)((target_seconds_per_frame - time_elapsed) * 1000.0f);
+			ms_to_wait = (uint32_t)((target_seconds_per_frame - time_elapsed) * 1000.0f);
 			SDL_Delay(ms_to_wait);
 		}
 	}
@@ -236,6 +296,8 @@ void Application::destroy()
 	// Clean up resources
 	glDeleteProgram(shader_program);
 	glDeleteBuffers(1, &vbo);
+	glDeleteBuffers(1, &ebo);
+	glDeleteVertexArrays(1, &vao);
 
 	// Close OpenGL, the SDL window and SDL
 	SDL_GL_DeleteContext(context);
