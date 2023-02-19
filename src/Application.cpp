@@ -21,14 +21,14 @@ void Application::setup()
 		"layout (location = 0) in vec3 position;\n"
 		"void main()\n"
 		"{\n"
-		"   gl_Position = vec4(position, 1.0);\n"
+		"	gl_Position = vec4(position, 1.0);\n"
 		"}\0";
 	const char* fragment_shader_source =
 		"#version 330 core\n"
 		"out vec4 out_color;\n"
 		"void main()\n"
 		"{\n"
-		"   out_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
+		"	out_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
 		"}\n\0";
 
 	// Compile the vertex and fragment shaders
@@ -62,8 +62,7 @@ void Application::setup()
 
 	// Bind the VBO and set the vertex data as the buffer's data
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(
-		GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
 
 	// Create the vertex array object (VAO)
 	glGenVertexArrays(1, &vao);
@@ -73,13 +72,13 @@ void Application::setup()
 	int pos_attrib = glGetAttribLocation(shader_program, "position");
 	glEnableVertexAttribArray(pos_attrib);
 	glVertexAttribPointer(
-        pos_attrib, 
-        NUM_VERTICES_PER_POLYGON, 
-        GL_FLOAT,
+		pos_attrib, 
+		NUM_VERTICES_PER_POLYGON, 
+		GL_FLOAT,
 		GL_FALSE, 
-        NUM_VERTICES_PER_POLYGON * sizeof(float), 
-        nullptr
-    );
+		NUM_VERTICES_PER_POLYGON * sizeof(float), 
+		nullptr
+	);
 }
 
 void Application::check_shader_compilation_success(uint32_t shader)
@@ -170,18 +169,18 @@ void Application::render()
 void Application::initialize()
 {
 	// Initialize SDL
-    SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_Init(SDL_INIT_EVERYTHING);
 
 	// Create a window
 	window = SDL_CreateWindow(
-        "OpenGL Example", 
-        SDL_WINDOWPOS_CENTERED,
+		"OpenGL Example", 
+		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED, 
-        window_width, window_height,
+		window_width, window_height,
 		SDL_WINDOW_OPENGL | 
-        SDL_WINDOW_BORDERLESS | 
-        SDL_WINDOW_RESIZABLE
-    );
+		SDL_WINDOW_BORDERLESS | 
+		SDL_WINDOW_RESIZABLE
+	);
 
 	// Create an OpenGL context
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
