@@ -9,7 +9,7 @@ typedef uint32_t GLenum;
 class Shader
 {
 public:
-	Shader() = default;
+	Shader() = default; // for when we want to declare a shader without loading it
 	Shader(const std::string& vertex_shader_file,
 		const std::string& fragment_shader_file);
 

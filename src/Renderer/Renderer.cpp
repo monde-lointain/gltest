@@ -25,9 +25,9 @@ void Renderer::create_shaders()
 	shader = Shader("./shaders/2dvertex.glsl", "./shaders/2dfragment.glsl");
 
 	// Define the vertex data for the triangles
-	vertices[0] = {glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f)}; // bottom left
-	vertices[1] = {glm::vec3( 0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)}; // bottom right
-	vertices[2] = {glm::vec3( 0.0f, - 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)}; // top
+	vertices[0] = {glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(0.0f, 0.0f)}; // bottom left
+	vertices[1] = {glm::vec3( 0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec2(1.0f, 0.0f)}; // bottom right
+	vertices[2] = {glm::vec3( 0.0f,  0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.5f, 1.0f)}; // top
 
 	// Create the vertex buffer object (VBO)
 	glGenBuffers(1, &vbo);
@@ -129,6 +129,9 @@ void Renderer::render()
 	const float green = (sinf(t) / 2.0f) + 0.5f;
 	const glm::vec3 color(0.0f, green, 0.0f);
 	shader.set_uniform("vcolor", color);
+
+	const glm::vec3 offset(0.5f, 0.0f, 0.0f);
+	shader.set_uniform("offset", offset);
 
 	// Get the vertex array to render
 	glBindVertexArray(vao);
